@@ -328,16 +328,18 @@ void getUniformsLocations(Shader shader)
 	mvMatrixLoc = glGetUniformLocation(shaderProgram[shader], "modelViewMatrix");
 	normalMatrixLoc = glGetUniformLocation(shaderProgram[shader], "normalMatrix");
 
-	materialAmbientLoc = glGetUniformLocation(shaderProgram[shader], "materialAmbient");
-	materialDiffuseLoc = glGetUniformLocation(shaderProgram[shader], "materialDiffuse");
-	materialSpecularLoc = glGetUniformLocation(shaderProgram[shader], "materialSpecular");
-	materialShininessLoc = glGetUniformLocation(shaderProgram[shader], "materialShininess");
-
 	lightPositionLoc = glGetUniformLocation(shaderProgram[shader], "lightPosition");
-	
+
 	lightAmbientLoc = glGetUniformLocation(shaderProgram[shader], "lightAmbient");
 	lightDiffuseLoc = glGetUniformLocation(shaderProgram[shader], "lightDiffuse");
 	lightSpecularLoc = glGetUniformLocation(shaderProgram[shader], "lightSpecular");
+
+	materialAmbientLoc = glGetUniformLocation(shaderProgram[shader], "materialAmbient");
+	materialDiffuseLoc = glGetUniformLocation(shaderProgram[shader], "materialDiffuse");
+	materialSpecularLoc = glGetUniformLocation(shaderProgram[shader], "materialSpecular");
+
+	if (shader == ADS_FRAGMENT)
+		materialShininessLoc = glGetUniformLocation(shaderProgram[shader], "materialShininess");
 }
 
 /*------------------------------------------------------------------------------------------
@@ -362,7 +364,9 @@ void renderScene()
 	glUniform3fv(materialDiffuseLoc, 1, glm::value_ptr(materialDiffuse));
 	glUniform3fv(materialAmbientLoc, 1, glm::value_ptr(materialAmbient));
 	glUniform3fv(materialSpecularLoc, 1, glm::value_ptr(materialSpecular));
-	glUniform1f(materialShininessLoc, shininess);
+
+	if (shader == ADS_FRAGMENT)
+		glUniform1f(materialShininessLoc, shininess);
 
 	if (wireframe)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

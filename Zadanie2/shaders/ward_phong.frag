@@ -10,7 +10,6 @@ uniform vec3 lightSpecular;
 uniform vec3 materialAmbient;
 uniform vec3 materialDiffuse;
 uniform vec3 materialSpecular;
-uniform float materialShininess;
 
 in vec3 position; // interpolowana pozycja
 in vec3 normal; // interpolowany normal

@@ -14,7 +14,6 @@ uniform vec3 lightSpecular;
 uniform vec3 materialAmbient;
 uniform vec3 materialDiffuse;
 uniform vec3 materialSpecular;
-uniform float materialShininess;
  
 layout (location = 0) in vec3 vPosition; // pozycja wierzcholka w lokalnym ukladzie wspolrzednych
 layout (location = 1) in vec3 vNormal; // normal
