@@ -18,8 +18,8 @@
     <ClInclude Include="shaders.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragment.frag" />
-    <None Include="shaders\vertex.vert" />
+    <None Include="shaders\blinn-phong.frag" />
+    <None Include="shaders\blinn-phong.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

@@ -31,7 +31,7 @@ constexpr float ZOOM_FACTOR = 1.1f; // wspolczynnik do zmiany kata fovy
 
 //******************************************************************************************
 GLuint vao; // identyfikatory VAO
-GLuint buffers[2]; // identyfikatory VBO
+GLuint buffers[3]; // identyfikatory VBO
 
 GLuint shaderProgram; // identyfikator programu cieniowania
 
@@ -40,18 +40,45 @@ GLuint colorLoc; // lokalizacja zmiennej jednorodnej - kolor rysowania prymitywu
 
 GLuint projMatrixLoc; // lokalizacja zmiennej jednorodnej - macierz projekcji
 GLuint mvMatrixLoc; // lokalizacja zmiennej jednorodnej - macierz model-widok
+GLuint normalMatrixLoc; // lokalizacja zmiennej jednorodnej - macierz sluzaca do transformacji normali
+
+
+GLuint lightAmbientLoc; // lokalizacja zmiennej jednorodnej - skladowa ambient swiatla
+GLuint materialAmbientLoc; // lokalizacja zmiennej jednorodnej - skladowa ambient materialu
+
+GLuint lightPositionLoc; // lokalizacja zmiennej jednorodnej - pozycja swiatla
+GLuint lightDiffuseLoc; // lokalizacja zmiennej jednorodnej - skladowa diffuse swiatla
+GLuint materialDiffuseLoc; // lokalizacja zmiennej jednorodnej - skladowa diffuse materialu
+
+GLuint lightSpecularLoc; // lokalizacja zmiennej jednorodnej - skladowa specular swiatla
+GLuint materialSpecularLoc; // lokalizacja zmiennej jednorodnej - skladowa specular materialu
+GLuint materialShininessLoc; // lokalizacja zmiennej jednorodnej - polyskliwosc materialu
+
 
 glm::mat4 projMatrix; // macierz projekcji
 glm::mat4 mvMatrix; // macierz model-widok
 
-bool wireframe = true; // czy rysowac siatke (true) czy wypelnienie (false)
+
+// parametry swiatla
+glm::vec4 lightPosition = glm::vec4(10.0f, 10.0f, 10.0f, 1.0f); // pozycja we ukladzie swiata
+glm::vec3 lightAmbient = glm::vec3(0.2f, 0.2f, 0.2f);
+glm::vec3 lightDiffuse = glm::vec3(1.0f, 1.0f, 1.0f);
+glm::vec3 lightSpecular = glm::vec3(1.0, 1.0, 1.0);
+
+// material obiektu
+glm::vec3 materialAmbient = glm::vec3(1.0f, 0.5f, 0.0f);
+glm::vec3 materialDiffuse = glm::vec3(0.34615f, 0.3143f, 0.0903f);
+glm::vec3 materialSpecular = glm::vec3(0.797357, 0.723991, 0.208006);
+float shininess = 83.2f;
+
+
+bool wireframe = false; // czy rysowac siatke (true) czy wypelnienie (false)
 glm::vec3 rotationAngles = glm::vec3(0.0, 0.0, 0.0); // katy rotacji wokol poszczegolnych osi
-float fovy = 15.0f; // kat patrzenia (uzywany do skalowania sceny)
+float fovy = 20.0f; // kat patrzenia (uzywany do skalowania sceny)
 float aspectRatio = static_cast<float>(WIDTH) / HEIGHT;
 
 GLint indicesNumber = 0; // liczba indeksow definiujacych obiekt
 
-float color[] = { 0.0f, 1.0f, 0.0f, 1.0f }; // kolor jakim rysowac siatke
 float lineWidth = 1.5f; // grubosc linii
 //******************************************************************************************
 
@@ -258,7 +285,7 @@ void initGL()
 	std::cout << "GL_VERSION = " << glGetString(GL_VERSION) << std::endl;
 	std::cout << "GLSL = " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 
 	updateProjectionMatrix();
@@ -273,14 +300,24 @@ void initGL()
 **------------------------------------------------------------------------------------------*/
 void setupShaders()
 {
-	if (!setupShaders("shaders/vertex.vert", "shaders/fragment.frag", shaderProgram))
+	if (!setupShaders("shaders/blinn-phong.vert", "shaders/blinn-phong.frag", shaderProgram))
 		exit(3);
-
-	vertexLoc = glGetAttribLocation(shaderProgram, "vPosition");
-	colorLoc = glGetUniformLocation(shaderProgram, "color");
 
 	projMatrixLoc = glGetUniformLocation(shaderProgram, "projectionMatrix");
 	mvMatrixLoc = glGetUniformLocation(shaderProgram, "modelViewMatrix");
+	normalMatrixLoc = glGetUniformLocation(shaderProgram, "normalMatrix");
+
+
+	lightAmbientLoc = glGetUniformLocation(shaderProgram, "lightAmbient");
+	materialAmbientLoc = glGetUniformLocation(shaderProgram, "materialAmbient");
+
+	lightPositionLoc = glGetUniformLocation(shaderProgram, "lightPosition");
+	lightDiffuseLoc = glGetUniformLocation(shaderProgram, "lightDiffuse");
+	materialDiffuseLoc = glGetUniformLocation(shaderProgram, "materialDiffuse");
+
+	lightSpecularLoc = glGetUniformLocation(shaderProgram, "lightSpecular");
+	materialSpecularLoc = glGetUniformLocation(shaderProgram, "materialSpecular");
+	materialShininessLoc = glGetUniformLocation(shaderProgram, "materialShininess");
 }
 
 /*------------------------------------------------------------------------------------------
@@ -302,15 +339,22 @@ void setupBuffers()
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	glGenBuffers(2, buffers);
+	glGenBuffers(3, buffers);
+	
 	// VBO dla wierzcholkow
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), reinterpret_cast<GLfloat*>(&vertices[0]), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(vertexLoc);
-	glVertexAttribPointer(vertexLoc, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// VBO dla normali
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, normals.size() * sizeof(float), reinterpret_cast<GLuint*>(&normals[0]), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// VBO dla indeksow
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[2]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), reinterpret_cast<GLuint*>(&indices[0]), GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
@@ -328,6 +372,21 @@ void renderScene()
 	glUseProgram(shaderProgram);
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, glm::value_ptr(projMatrix));
 
+
+	glm::vec4 lightPos = mvMatrix * lightPosition;
+	glUniform4fv(lightPositionLoc, 1, glm::value_ptr(lightPos));
+
+	glUniform3fv(lightAmbientLoc, 1, glm::value_ptr(lightAmbient));
+	glUniform3fv(materialAmbientLoc, 1, glm::value_ptr(materialAmbient));
+
+	glUniform3fv(lightDiffuseLoc, 1, glm::value_ptr(lightDiffuse));
+	glUniform3fv(materialDiffuseLoc, 1, glm::value_ptr(materialDiffuse));
+
+	glUniform3fv(lightSpecularLoc, 1, glm::value_ptr(lightSpecular));
+	glUniform3fv(materialSpecularLoc, 1, glm::value_ptr(materialSpecular));
+	glUniform1f(materialShininessLoc, shininess);
+
+
 	if (wireframe)
 	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -342,8 +401,10 @@ void renderScene()
 
 	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, glm::value_ptr(mvMatrix));
 
+	glm::mat3 normalMat = glm::inverseTranspose(glm::mat3(mvMatrix));
+	glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMat));
+
 	glBindVertexArray(vao);
-	glUniform4fv(colorLoc, 1, color);
 	glDrawElements(GL_TRIANGLES, indicesNumber, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
@@ -367,9 +428,9 @@ void generateSphereVertices(std::vector<float> &vertices, std::vector<float> &no
 
 	float v = 0.0f, u = 0.0f;
 	
-	float x, y, z, w = 1.0f;
+	float x, y, z;
 
-	const float LENGTH = 1.0f / RADIUS;
+	const float LENGTH = (1.0f / RADIUS);
 
 	//std::cout << fiMin << " " << fiMax << ", " << V_STEP << " " << U_STEP << std::endl;
 
@@ -388,12 +449,10 @@ void generateSphereVertices(std::vector<float> &vertices, std::vector<float> &no
 			vertices.push_back(x);
 			vertices.push_back(y);
 			vertices.push_back(z);
-			vertices.push_back(w);
 
 			normals.push_back(x * LENGTH);
 			normals.push_back(y * LENGTH);
 			normals.push_back(z * LENGTH);
-			normals.push_back(w);
 
 			u += U_STEP;
 		}
