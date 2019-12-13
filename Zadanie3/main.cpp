@@ -1,5 +1,4 @@
-// Micha³ Biernat IN¯ III PGK 1 - Zestaw 3 - Zadanie 2
-// NUMPAD: 1 - ADS_FRAGMENT, 2 - WARD_PHONG, 3 - WARD_GOURAUD
+ï»¿// MichaÅ‚ Biernat INÅ» III PGK 1 - Zestaw 3 - Zadanie 3
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -14,7 +13,7 @@
 
 constexpr int WIDTH = 600;
 constexpr int HEIGHT = 600;
-constexpr int NUM_SHADERS = 3;
+
 constexpr float ROT_STEP = 10.0f;
 constexpr float ZOOM_FACTOR = 1.1f;
 
@@ -22,17 +21,8 @@ constexpr float ZOOM_FACTOR = 1.1f;
 const std::string modelName = "models/dragon.obj";
 
 Model* model;
-enum Shader { ADS_FRAGMENT, WARD_PHONG, WARD_GOURAUD };
 
-const std::string shader_str[] =
-{
-	"ambient-diffuse-specular (per fragment)",
-	"ward phong",
-	"ward gouraud"
-};
-
-Shader shader = ADS_FRAGMENT;
-GLuint shaderProgram[NUM_SHADERS];
+GLuint shaderProgram;
 
 GLuint projMatrixLoc;
 GLuint mvMatrixLoc;
@@ -77,9 +67,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void onShutdown();
 void initGL();
-void printStatus();
 void setupShaders();
-void getUniformsLocations(Shader shader);
 void renderScene();
 void updateProjectionMatrix();
 
@@ -99,7 +87,7 @@ int main(int argc, char* argv[])
 
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "Zadanie 2", nullptr, nullptr);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "Zadanie 3", nullptr, nullptr);
 	if (!window)
 	{
 		glfwTerminate();
@@ -157,7 +145,7 @@ void errorCallback(int error, const char* description)
 
 /*------------------------------------------------------------------------------------------
 ** funkcja zwrotna do obslugi klawiatury
-** window - okno, które otrzymalo zdarzenie
+** window - okno, ktï¿½re otrzymalo zdarzenie
 ** key - klawisz jaki zostal nacisniety lub zwolniony
 ** scancode - scancode klawisza specyficzny dla systemu
 ** action - zachowanie klawisza (GLFW_PRESS, GLFW_RELEASE or GLFW_REPEAT)
@@ -224,14 +212,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			}
 			break;
 
-		case GLFW_KEY_1:
-		case GLFW_KEY_2:
-		case GLFW_KEY_3:
-			shader = (Shader)(key - 49);
-			getUniformsLocations(shader);
-			printStatus();
-			break;
-
 		case GLFW_KEY_F1:
 			wireframe = !wireframe;
 			break;
@@ -241,7 +221,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 /*------------------------------------------------------------------------------------------
 ** funkcja zwrotna do obslugi zmiany rozmiary bufora ramku
-** window - okno, które otrzymalo zdarzenie
+** window - okno, ktï¿½re otrzymalo zdarzenie
 ** width - szerokosc bufora ramki
 ** height - wysokosc bufora ramki
 **------------------------------------------------------------------------------------------*/
@@ -258,8 +238,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 **------------------------------------------------------------------------------------------*/
 void onShutdown()
 {
-	for (int i = 0; i < NUM_SHADERS; ++i)
-		glDeleteProgram(shaderProgram[i]);
+	glDeleteProgram(shaderProgram);
 
 	delete model;
 }
@@ -269,6 +248,12 @@ void onShutdown()
 **------------------------------------------------------------------------------------------*/
 void initGL()
 {
+	std::cout << "GLEW = " << glewGetString(GLEW_VERSION) << std::endl;
+	std::cout << "GL_VENDOR = " << glGetString(GL_VENDOR) << std::endl;
+	std::cout << "GL_RENDERER = " << glGetString(GL_RENDERER) << std::endl;
+	std::cout << "GL_VERSION = " << glGetString(GL_VERSION) << std::endl;
+	std::cout << "GLSL = " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 
@@ -281,24 +266,6 @@ void initGL()
 	glm::vec3 extent = glm::abs(model->getBBmax() - model->getBBmin());
 	float maxExtent = glm::max(glm::max(extent.x, extent.y), extent.z);
 	scale = glm::vec3(7.0 / maxExtent);
-
-	printStatus();
-}
-
-/*------------------------------------------------------------------------------------------
-** funkcja wypisujaca podstawowe informacje o ustawieniach programu
-**------------------------------------------------------------------------------------------*/
-void printStatus()
-{
-	system("cls");
-
-	std::cout << "GLEW = " << glewGetString(GLEW_VERSION) << std::endl;
-	std::cout << "GL_VENDOR = " << glGetString(GL_VENDOR) << std::endl;
-	std::cout << "GL_RENDERER = " << glGetString(GL_RENDERER) << std::endl;
-	std::cout << "GL_VERSION = " << glGetString(GL_VERSION) << std::endl;
-	std::cout << "GLSL = " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
-
-	std::cout << "Program cieniowania: " << shader_str[shader] << std::endl;
 }
 
 /*------------------------------------------------------------------------------------------
@@ -306,40 +273,23 @@ void printStatus()
 **------------------------------------------------------------------------------------------*/
 void setupShaders()
 {
-	if (!setupShaders("shaders/vertex.vert", "shaders/fragment.frag", shaderProgram[ADS_FRAGMENT]))
+	if (!setupShaders("shaders/vertex.vert", "shaders/fragment.frag", shaderProgram))
 		exit(3);
 
-	if (!setupShaders("shaders/ward_phong.vert", "shaders/ward_phong.frag", shaderProgram[WARD_PHONG]))
-		exit(3);
+	projMatrixLoc = glGetUniformLocation(shaderProgram, "projectionMatrix");
+	mvMatrixLoc = glGetUniformLocation(shaderProgram, "modelViewMatrix");
+	normalMatrixLoc = glGetUniformLocation(shaderProgram, "normalMatrix");
 
-	if (!setupShaders("shaders/ward_gouraud.vert", "shaders/ward_gouraud.frag", shaderProgram[WARD_GOURAUD]))
-		exit(3);
+	lightPositionLoc = glGetUniformLocation(shaderProgram, "lightPosition");
 
-	getUniformsLocations(shader);
-}
+	lightAmbientLoc = glGetUniformLocation(shaderProgram, "lightAmbient");
+	lightDiffuseLoc = glGetUniformLocation(shaderProgram, "lightDiffuse");
+	lightSpecularLoc = glGetUniformLocation(shaderProgram, "lightSpecular");
 
-/*------------------------------------------------------------------------------------------
-** funkcja pobiera lokalizacje zmiennych jednorodnych dla wybranego programu cieniowania
-** shader - indeks programu cieniowania w tablicy z identyfikatorami programow
-**------------------------------------------------------------------------------------------*/
-void getUniformsLocations(Shader shader)
-{
-	projMatrixLoc = glGetUniformLocation(shaderProgram[shader], "projectionMatrix");
-	mvMatrixLoc = glGetUniformLocation(shaderProgram[shader], "modelViewMatrix");
-	normalMatrixLoc = glGetUniformLocation(shaderProgram[shader], "normalMatrix");
-
-	lightPositionLoc = glGetUniformLocation(shaderProgram[shader], "lightPosition");
-
-	lightAmbientLoc = glGetUniformLocation(shaderProgram[shader], "lightAmbient");
-	lightDiffuseLoc = glGetUniformLocation(shaderProgram[shader], "lightDiffuse");
-	lightSpecularLoc = glGetUniformLocation(shaderProgram[shader], "lightSpecular");
-
-	materialAmbientLoc = glGetUniformLocation(shaderProgram[shader], "materialAmbient");
-	materialDiffuseLoc = glGetUniformLocation(shaderProgram[shader], "materialDiffuse");
-	materialSpecularLoc = glGetUniformLocation(shaderProgram[shader], "materialSpecular");
-
-	if (shader == ADS_FRAGMENT)
-		materialShininessLoc = glGetUniformLocation(shaderProgram[shader], "materialShininess");
+	materialAmbientLoc = glGetUniformLocation(shaderProgram, "materialAmbient");
+	materialDiffuseLoc = glGetUniformLocation(shaderProgram, "materialDiffuse");
+	materialSpecularLoc = glGetUniformLocation(shaderProgram, "materialSpecular");
+	materialShininessLoc = glGetUniformLocation(shaderProgram, "materialShininess");
 }
 
 /*------------------------------------------------------------------------------------------
@@ -351,7 +301,7 @@ void renderScene()
 
 	mvMatrix = glm::lookAt(glm::vec3(0, 0, 10), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 
-	glUseProgram(shaderProgram[shader]);
+	glUseProgram(shaderProgram);
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, glm::value_ptr(projMatrix));
 
 	glm::vec4 lightPos = mvMatrix * lightPosition;
@@ -364,9 +314,7 @@ void renderScene()
 	glUniform3fv(materialDiffuseLoc, 1, glm::value_ptr(materialDiffuse));
 	glUniform3fv(materialAmbientLoc, 1, glm::value_ptr(materialAmbient));
 	glUniform3fv(materialSpecularLoc, 1, glm::value_ptr(materialSpecular));
-
-	if (shader == ADS_FRAGMENT)
-		glUniform1f(materialShininessLoc, shininess);
+	glUniform1f(materialShininessLoc, shininess);
 
 	if (wireframe)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

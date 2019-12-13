@@ -25,10 +25,6 @@
   <ItemGroup>
     <None Include="shaders\fragment.frag" />
     <None Include="shaders\vertex.vert" />
-    <None Include="shaders\ward_gouraud.frag" />
-    <None Include="shaders\ward_gouraud.vert" />
-    <None Include="shaders\ward_phong.frag" />
-    <None Include="shaders\ward_phong.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
