@@ -28,10 +28,21 @@ GLuint projMatrixLoc;
 GLuint mvMatrixLoc;
 GLuint normalMatrixLoc;
 
-GLuint lightPositionLoc;
-GLuint lightAmbientLoc;
-GLuint lightDiffuseLoc;
-GLuint lightSpecularLoc;
+const int NUM_OF_LIGHTS = 2;
+
+struct LightLoc 
+{
+	GLuint position;
+	GLuint theta;
+	
+	GLuint ambient;
+	GLuint diffuse;
+	GLuint specular;
+
+	GLuint enabled;
+};
+
+LightLoc lightLoc[2];
 
 GLuint materialAmbientLoc;
 GLuint materialDiffuseLoc;
@@ -42,10 +53,24 @@ glm::mat4 projMatrix;
 glm::mat4 mvMatrix;
 
 // parametry swiatla
-glm::vec4 lightPosition = glm::vec4(0.0f, 0.0f, 10.0f, 1.0f); // pozycja we ukladzie swiata
-glm::vec3 lightAmbient = glm::vec3(0.2f, 0.2f, 0.2f);
-glm::vec3 lightDiffuse = glm::vec3(1.0f, 1.0f, 1.0f);
-glm::vec3 lightSpecular = glm::vec3(1.0, 1.0, 1.0);
+glm::vec4 lightPosition[] {
+	glm::vec4(0.0f, 0.0f, 5.0f, 0.0f), glm::vec4(0.0f, 0.0f, 5.0f, 1.0f)
+};
+float lightTheta[] { 
+	180.0f, 30.0f 
+};
+glm::vec3 lightAmbient[] { 
+	glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.2f, 0.2f, 0.2f)
+};
+glm::vec3 lightDiffuse[] { 
+	glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f)
+};
+glm::vec3 lightSpecular[] {
+	glm::vec3(1.0, 1.0, 1.0), glm::vec3(1.0, 1.0, 1.0)
+};
+bool lightEnabled[]{
+	true, true
+};
 
 // material obiektu
 glm::vec3 materialAmbient = glm::vec3(1.0f, 0.5f, 0.0f);
@@ -53,7 +78,6 @@ glm::vec3 materialDiffuse = glm::vec3(0.34615f, 0.3143f, 0.0903f);
 glm::vec3 materialSpecular = glm::vec3(0.797357, 0.723991, 0.208006);
 float shininess = 83.2f;
 
-bool wireframe = false; // czy rysowac siatke (true) czy wypelnienie (false)
 glm::vec3 rotationAngles = glm::vec3(-80.0, 0.0, 0.0); // katy rotacji wokol poszczegolnych osi
 
 glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -213,7 +237,33 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			break;
 
 		case GLFW_KEY_F1:
-			wireframe = !wireframe;
+			lightPosition[0].w = 1.0f;
+			lightTheta[0] = 180.0f;
+			break;
+		case GLFW_KEY_F2:
+			lightPosition[0].w = 0.0f;
+			break;
+		case GLFW_KEY_F3:
+			lightPosition[0].w = 1.0f;
+			lightTheta[0] = 30.0f;
+			break;
+		case GLFW_KEY_F4:
+			lightEnabled[0] != lightEnabled[0];
+			break;
+
+		case GLFW_KEY_F5:
+			lightPosition[1].w = 1.0f;
+			lightTheta[1] = 180.0f;
+			break;
+		case GLFW_KEY_F6:
+			lightPosition[1].w = 0.0f;
+			break;
+		case GLFW_KEY_F7:
+			lightPosition[1].w = 1.0f;
+			lightTheta[1] = 30.0f;
+			break;
+		case GLFW_KEY_F8:
+			lightEnabled[1] != lightEnabled[1];
 			break;
 		}
 	}
@@ -280,16 +330,28 @@ void setupShaders()
 	mvMatrixLoc = glGetUniformLocation(shaderProgram, "modelViewMatrix");
 	normalMatrixLoc = glGetUniformLocation(shaderProgram, "normalMatrix");
 
-	lightPositionLoc = glGetUniformLocation(shaderProgram, "lightPosition");
-
-	lightAmbientLoc = glGetUniformLocation(shaderProgram, "lightAmbient");
-	lightDiffuseLoc = glGetUniformLocation(shaderProgram, "lightDiffuse");
-	lightSpecularLoc = glGetUniformLocation(shaderProgram, "lightSpecular");
-
 	materialAmbientLoc = glGetUniformLocation(shaderProgram, "materialAmbient");
 	materialDiffuseLoc = glGetUniformLocation(shaderProgram, "materialDiffuse");
 	materialSpecularLoc = glGetUniformLocation(shaderProgram, "materialSpecular");
 	materialShininessLoc = glGetUniformLocation(shaderProgram, "materialShininess");
+
+	lightLoc[0].position = glGetUniformLocation(shaderProgram, "light[0].position");
+	lightLoc[0].theta = glGetUniformLocation(shaderProgram, "light[0].theta");
+
+	lightLoc[0].ambient = glGetUniformLocation(shaderProgram, "light[0].ambient");
+	lightLoc[0].diffuse = glGetUniformLocation(shaderProgram, "light[0].diffuse");
+	lightLoc[0].specular = glGetUniformLocation(shaderProgram, "light[0].specular");
+
+	lightLoc[0].enabled = glGetUniformLocation(shaderProgram, "light[0].enabled");
+
+	lightLoc[1].position = glGetUniformLocation(shaderProgram, "light[1].position");
+	lightLoc[1].theta = glGetUniformLocation(shaderProgram, "light[1].theta");
+
+	lightLoc[1].ambient = glGetUniformLocation(shaderProgram, "light[1].ambient");
+	lightLoc[1].diffuse = glGetUniformLocation(shaderProgram, "light[1].diffuse");
+	lightLoc[1].specular = glGetUniformLocation(shaderProgram, "light[1].specular");
+
+	lightLoc[1].enabled = glGetUniformLocation(shaderProgram, "light[1].enabled");
 }
 
 /*------------------------------------------------------------------------------------------
@@ -304,22 +366,29 @@ void renderScene()
 	glUseProgram(shaderProgram);
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, glm::value_ptr(projMatrix));
 
-	glm::vec4 lightPos = mvMatrix * lightPosition;
-	glUniform4fv(lightPositionLoc, 1, glm::value_ptr(lightPos));
+	for (int i = 0; i < NUM_OF_LIGHTS; i++)
+	{ 
+		if (lightEnabled[i])
+		{
+			glm::vec4 lightPos = mvMatrix * lightPosition[i];
+			glUniform4fv(lightLoc[i].position, 1, glm::value_ptr(lightPos));
 
-	glUniform3fv(lightAmbientLoc, 1, glm::value_ptr(lightAmbient));
-	glUniform3fv(lightDiffuseLoc, 1, glm::value_ptr(lightDiffuse));
-	glUniform3fv(lightSpecularLoc, 1, glm::value_ptr(lightSpecular));
+			glUniform1f(lightLoc[i].theta, glm::radians(lightTheta[i]));
+
+			glUniform3fv(lightLoc[i].ambient, 1, glm::value_ptr(lightAmbient[i]));
+			glUniform3fv(lightLoc[i].diffuse, 1, glm::value_ptr(lightDiffuse[i]));
+			glUniform3fv(lightLoc[i].specular, 1, glm::value_ptr(lightSpecular[i]));
+
+			glUniform1i(lightLoc[i].enabled, lightEnabled[i]);
+		}
+	}
 
 	glUniform3fv(materialDiffuseLoc, 1, glm::value_ptr(materialDiffuse));
 	glUniform3fv(materialAmbientLoc, 1, glm::value_ptr(materialAmbient));
 	glUniform3fv(materialSpecularLoc, 1, glm::value_ptr(materialSpecular));
 	glUniform1f(materialShininessLoc, shininess);
 
-	if (wireframe)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	
 
 	mvMatrix = glm::scale(mvMatrix, scale);
 	mvMatrix = glm::rotate(mvMatrix, glm::radians(rotationAngles.z), glm::vec3(0.0f, 0.0f, 1.0f));
