@@ -44,7 +44,8 @@ void main()
 
 	for (int i = 0; i < NUM_OF_LIGHTS; i++)
 	{
-		result += CalcLight(light[i], norm, viewDir);
+		if (light[i].enabled)
+			result += CalcLight(light[i], norm, viewDir);
 	}
 
 	fColor = vec4(clamp(result, 0.0, 1.0), 1.0);

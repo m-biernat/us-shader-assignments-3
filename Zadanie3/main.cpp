@@ -42,7 +42,7 @@ struct LightLoc
 	GLuint enabled;
 };
 
-LightLoc lightLoc[2];
+LightLoc lightLoc[NUM_OF_LIGHTS];
 
 GLuint materialAmbientLoc;
 GLuint materialDiffuseLoc;
@@ -60,16 +60,16 @@ float lightTheta[] {
 	180.0f, 30.0f 
 };
 glm::vec3 lightAmbient[] { 
-	glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.2f, 0.2f, 0.2f)
+	glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.2f, 0.0f, 0.0f)
 };
 glm::vec3 lightDiffuse[] { 
-	glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f)
+	glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f)
 };
 glm::vec3 lightSpecular[] {
-	glm::vec3(1.0, 1.0, 1.0), glm::vec3(1.0, 1.0, 1.0)
+	glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f)
 };
-bool lightEnabled[]{
-	true, true
+bool lightEnabled[] {
+	true, false
 };
 
 // material obiektu
@@ -248,7 +248,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			lightTheta[0] = 30.0f;
 			break;
 		case GLFW_KEY_F4:
-			lightEnabled[0] != lightEnabled[0];
+			lightEnabled[0] = !lightEnabled[0];
 			break;
 
 		case GLFW_KEY_F5:
@@ -263,7 +263,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			lightTheta[1] = 30.0f;
 			break;
 		case GLFW_KEY_F8:
-			lightEnabled[1] != lightEnabled[1];
+			lightEnabled[1] = !lightEnabled[1];
 			break;
 		}
 	}
@@ -368,19 +368,16 @@ void renderScene()
 
 	for (int i = 0; i < NUM_OF_LIGHTS; i++)
 	{ 
-		if (lightEnabled[i])
-		{
-			glm::vec4 lightPos = mvMatrix * lightPosition[i];
-			glUniform4fv(lightLoc[i].position, 1, glm::value_ptr(lightPos));
+		glm::vec4 lightPos = mvMatrix * lightPosition[i];
+		glUniform4fv(lightLoc[i].position, 1, glm::value_ptr(lightPos));
 
-			glUniform1f(lightLoc[i].theta, glm::radians(lightTheta[i]));
+		glUniform1f(lightLoc[i].theta, glm::radians(lightTheta[i]));
 
-			glUniform3fv(lightLoc[i].ambient, 1, glm::value_ptr(lightAmbient[i]));
-			glUniform3fv(lightLoc[i].diffuse, 1, glm::value_ptr(lightDiffuse[i]));
-			glUniform3fv(lightLoc[i].specular, 1, glm::value_ptr(lightSpecular[i]));
+		glUniform3fv(lightLoc[i].ambient, 1, glm::value_ptr(lightAmbient[i]));
+		glUniform3fv(lightLoc[i].diffuse, 1, glm::value_ptr(lightDiffuse[i]));
+		glUniform3fv(lightLoc[i].specular, 1, glm::value_ptr(lightSpecular[i]));
 
-			glUniform1i(lightLoc[i].enabled, lightEnabled[i]);
-		}
+		glUniform1i(lightLoc[i].enabled, lightEnabled[i]);
 	}
 
 	glUniform3fv(materialDiffuseLoc, 1, glm::value_ptr(materialDiffuse));
