@@ -54,6 +54,8 @@ GLuint materialShininessLoc;
 glm::mat4 projMatrix;
 glm::mat4 mvMatrix;
 
+const float SPOT_ANGLE = 57.0f, POINT_ANGLE = 180.0f;
+
 // parametry swiatla
 glm::vec4 lightPosition[] {
 	glm::vec4(0.0f, 0.0f, 5.0f, 0.0f), glm::vec4(0.0f, 0.0f, 5.0f, 1.0f)
@@ -62,7 +64,7 @@ glm::vec3 lightDirection[]{
 	glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, -1.0f)
 };
 float lightCutOffAngle[] { 
-	180.0f, 12.5f 
+	POINT_ANGLE, SPOT_ANGLE 
 };
 glm::vec3 lightAmbient[] { 
 	glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.2f, 0.0f, 0.0f)
@@ -243,14 +245,14 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 		case GLFW_KEY_F1:
 			lightPosition[0].w = 1.0f;
-			lightCutOffAngle[0] = 180.0f;
+			lightCutOffAngle[0] = POINT_ANGLE;
 			break;
 		case GLFW_KEY_F2:
 			lightPosition[0].w = 0.0f;
 			break;
 		case GLFW_KEY_F3:
 			lightPosition[0].w = 1.0f;
-			lightCutOffAngle[0] = 30.0f;
+			lightCutOffAngle[0] = SPOT_ANGLE;
 			break;
 		case GLFW_KEY_F4:
 			lightEnabled[0] = !lightEnabled[0];
@@ -258,14 +260,14 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 		case GLFW_KEY_F5:
 			lightPosition[1].w = 1.0f;
-			lightCutOffAngle[1] = 180.0f;
+			lightCutOffAngle[1] = POINT_ANGLE;
 			break;
 		case GLFW_KEY_F6:
 			lightPosition[1].w = 0.0f;
 			break;
 		case GLFW_KEY_F7:
 			lightPosition[1].w = 1.0f;
-			lightCutOffAngle[1] = 30.0f;
+			lightCutOffAngle[1] = SPOT_ANGLE;
 			break;
 		case GLFW_KEY_F8:
 			lightEnabled[1] = !lightEnabled[1];

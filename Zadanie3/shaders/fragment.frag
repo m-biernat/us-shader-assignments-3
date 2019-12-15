@@ -21,8 +21,8 @@ uniform Light light[NUM_OF_LIGHTS];
 
 // Parametry swiatla punktowego
 float constant = 1.0;
-float linear = 0.045;
-float quadratic = 0.0075;
+float linear = 0.007;
+float quadratic = 0.0002;
 
 // informacje o materiale
 uniform vec3 materialAmbient;
@@ -58,25 +58,40 @@ vec3 CalcLight(Light light, vec3 norm, vec3 viewDir)
 	vec3 ambient = materialAmbient * light.ambient;
 	vec3 lightDir, specular;
 	
-	if (light.position.w == 0.0)
-		lightDir = normalize(-light.direction);
-	else
-		lightDir = normalize(vec3(light.position) - position);
-
-	vec3 diffuse = materialDiffuse * max(dot(norm, lightDir), 0.0) * light.diffuse;
-
-	vec3 refl = reflect(-lightDir, norm);
-	specular = pow(max(dot(viewDir, refl), 0.0), materialShininess) * materialSpecular * light.specular;
+	float theta;
 
 	if (light.position.w == 1.0)
+		lightDir = normalize(vec3(light.position) - position);
+	else
+		lightDir = normalize(-light.direction);
+
+	if (light.cutOffAngle == radians(180.0))
+		theta = radians(360.0);
+	else
+		theta = dot(lightDir, normalize(-light.direction));
+
+	if (theta > light.cutOffAngle)
 	{
-		float dist = length(vec3(light.position) - position);
-		float attenuation = 1.0 / (constant + linear * dist + quadratic * (dist * dist));
+		vec3 diffuse = materialDiffuse * max(dot(norm, lightDir), 0.0) * light.diffuse;
+	
+		if (dot(lightDir, viewDir) > 0.0)
+		{
+			vec3 refl = reflect(-lightDir, norm);
+			specular = pow(max(dot(viewDir, refl), 0.0), materialShininess) * materialSpecular * light.specular;
+		}
 
-		ambient *= attenuation;
-		diffuse *= attenuation;
-		specular *= attenuation;
+		if (light.position.w == 1.0)
+		{
+			float dist = length(vec3(light.position) - position);
+			float attenuation = 1.0 / (constant + linear * dist + quadratic * (dist * dist));
+
+			ambient *= attenuation;
+			diffuse *= attenuation;
+			specular *= attenuation;
+		}
+		
+		return (ambient + diffuse + specular);
 	}
-
-    return (ambient + diffuse + specular);
+	else
+		return vec3(0.0);
 }
