@@ -35,9 +35,6 @@ GLuint buffers[3]; // identyfikatory VBO
 
 GLuint shaderProgram; // identyfikator programu cieniowania
 
-GLuint vertexLoc; // lokalizacja atrybutu wierzcholka - wspolrzedne wierzcholkow
-GLuint colorLoc; // lokalizacja zmiennej jednorodnej - kolor rysowania prymitywu
-
 GLuint projMatrixLoc; // lokalizacja zmiennej jednorodnej - macierz projekcji
 GLuint mvMatrixLoc; // lokalizacja zmiennej jednorodnej - macierz model-widok
 GLuint normalMatrixLoc; // lokalizacja zmiennej jednorodnej - macierz sluzaca do transformacji normali

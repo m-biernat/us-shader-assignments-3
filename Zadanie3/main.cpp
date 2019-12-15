@@ -33,7 +33,9 @@ const int NUM_OF_LIGHTS = 2;
 struct LightLoc 
 {
 	GLuint position;
-	GLuint theta;
+	GLuint direction;
+
+	GLuint cutOffAngle;
 	
 	GLuint ambient;
 	GLuint diffuse;
@@ -56,8 +58,11 @@ glm::mat4 mvMatrix;
 glm::vec4 lightPosition[] {
 	glm::vec4(0.0f, 0.0f, 5.0f, 0.0f), glm::vec4(0.0f, 0.0f, 5.0f, 1.0f)
 };
-float lightTheta[] { 
-	180.0f, 30.0f 
+glm::vec3 lightDirection[]{
+	glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, -1.0f)
+};
+float lightCutOffAngle[] { 
+	180.0f, 12.5f 
 };
 glm::vec3 lightAmbient[] { 
 	glm::vec3(0.2f, 0.2f, 0.2f), glm::vec3(0.2f, 0.0f, 0.0f)
@@ -238,14 +243,14 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 		case GLFW_KEY_F1:
 			lightPosition[0].w = 1.0f;
-			lightTheta[0] = 180.0f;
+			lightCutOffAngle[0] = 180.0f;
 			break;
 		case GLFW_KEY_F2:
 			lightPosition[0].w = 0.0f;
 			break;
 		case GLFW_KEY_F3:
 			lightPosition[0].w = 1.0f;
-			lightTheta[0] = 30.0f;
+			lightCutOffAngle[0] = 30.0f;
 			break;
 		case GLFW_KEY_F4:
 			lightEnabled[0] = !lightEnabled[0];
@@ -253,14 +258,14 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 		case GLFW_KEY_F5:
 			lightPosition[1].w = 1.0f;
-			lightTheta[1] = 180.0f;
+			lightCutOffAngle[1] = 180.0f;
 			break;
 		case GLFW_KEY_F6:
 			lightPosition[1].w = 0.0f;
 			break;
 		case GLFW_KEY_F7:
 			lightPosition[1].w = 1.0f;
-			lightTheta[1] = 30.0f;
+			lightCutOffAngle[1] = 30.0f;
 			break;
 		case GLFW_KEY_F8:
 			lightEnabled[1] = !lightEnabled[1];
@@ -336,7 +341,9 @@ void setupShaders()
 	materialShininessLoc = glGetUniformLocation(shaderProgram, "materialShininess");
 
 	lightLoc[0].position = glGetUniformLocation(shaderProgram, "light[0].position");
-	lightLoc[0].theta = glGetUniformLocation(shaderProgram, "light[0].theta");
+	lightLoc[0].direction = glGetUniformLocation(shaderProgram, "light[0].direction");
+
+	lightLoc[0].cutOffAngle = glGetUniformLocation(shaderProgram, "light[0].cutOffAngle");
 
 	lightLoc[0].ambient = glGetUniformLocation(shaderProgram, "light[0].ambient");
 	lightLoc[0].diffuse = glGetUniformLocation(shaderProgram, "light[0].diffuse");
@@ -345,7 +352,9 @@ void setupShaders()
 	lightLoc[0].enabled = glGetUniformLocation(shaderProgram, "light[0].enabled");
 
 	lightLoc[1].position = glGetUniformLocation(shaderProgram, "light[1].position");
-	lightLoc[1].theta = glGetUniformLocation(shaderProgram, "light[1].theta");
+	lightLoc[1].direction = glGetUniformLocation(shaderProgram, "light[1].direction");
+	
+	lightLoc[1].cutOffAngle = glGetUniformLocation(shaderProgram, "light[1].cutOffAngle");
 
 	lightLoc[1].ambient = glGetUniformLocation(shaderProgram, "light[1].ambient");
 	lightLoc[1].diffuse = glGetUniformLocation(shaderProgram, "light[1].diffuse");
@@ -368,10 +377,12 @@ void renderScene()
 
 	for (int i = 0; i < NUM_OF_LIGHTS; i++)
 	{ 
-		glm::vec4 lightPos = mvMatrix * lightPosition[i];
+		glm::vec4 lightPos = mvMatrix * glm::vec4(glm::vec3(lightPosition[i]), 0.0f);
+		lightPos.w = lightPosition[i].w;
 		glUniform4fv(lightLoc[i].position, 1, glm::value_ptr(lightPos));
+		glUniform3fv(lightLoc[i].direction, 1, glm::value_ptr(lightDirection[i]));
 
-		glUniform1f(lightLoc[i].theta, glm::radians(lightTheta[i]));
+		glUniform1f(lightLoc[i].cutOffAngle, glm::radians(lightCutOffAngle[i]));
 
 		glUniform3fv(lightLoc[i].ambient, 1, glm::value_ptr(lightAmbient[i]));
 		glUniform3fv(lightLoc[i].diffuse, 1, glm::value_ptr(lightDiffuse[i]));

@@ -6,7 +6,9 @@ const int NUM_OF_LIGHTS = 2;
 struct Light
 {
 	vec4 position;
-	float theta;
+	vec3 direction;
+	
+	float cutOffAngle;
 
 	vec3 ambient;
 	vec3 diffuse;
@@ -53,19 +55,18 @@ void main()
 
 vec3 CalcLight(Light light, vec3 norm, vec3 viewDir)
 {
-	vec3 lightDir = normalize(vec3(light.position) - position);
-
 	vec3 ambient = materialAmbient * light.ambient;
+	vec3 lightDir, specular;
+	
+	if (light.position.w == 0.0)
+		lightDir = normalize(-light.direction);
+	else
+		lightDir = normalize(vec3(light.position) - position);
 
-	vec3 diffuse = materialDiffuse * max(dot(lightDir, norm), 0.0) * light.diffuse;
+	vec3 diffuse = materialDiffuse * max(dot(norm, lightDir), 0.0) * light.diffuse;
 
-	vec3 specular = vec3(0.0, 0.0, 0.0);
-
-	if(dot(lightDir, viewDir) > 0.0)
-	{
-		vec3 refl = reflect(vec3(0.0, 0.0, 0.0) - lightDir, norm);
-		specular = pow(max(0.0, dot(viewDir, refl)), materialShininess) * materialSpecular * light.specular;
-	}
+	vec3 refl = reflect(-lightDir, norm);
+	specular = pow(max(dot(viewDir, refl), 0.0), materialShininess) * materialSpecular * light.specular;
 
 	if (light.position.w == 1.0)
 	{
